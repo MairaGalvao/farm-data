@@ -1,17 +1,16 @@
 import "./App.css";
-import * as Mui from "@material-ui/core";
 import React, { useState, useEffect } from "react";
+import FieldsByCatagory from "./FieldsByCatagory";
 
 function App() {
 	let [contentCrop, setContentCrop] = useState();
-
 	let [contentField, setContentField] = useState();
 	let [parsedData, setParsedData] = useState();
 
 	const token =
 		"Bearer eyJhbGciOiJIUzUxMiJ9.eyJpYXQiOjE2NDEzOTM5NTUsInN1YiI6InV6aS5jb2hlbkBjcm9weC5jb21AeFxuVFBFYVFPY213bnFqM2ZaMnNPdmRDUT09In0.Ijc4czVElCuuV8EJqAPdX21Sb82TvDirkNbvDSdNvSjCG_vnhiZqKZ80E-apXyc9y_JZBwPARmgdjfeL-4aR-A";
 
-	function fetchDataFieldData() {
+	function fetchFieldData() {
 		fetch("https://api.cropx.info/api/fields/centers", {
 			headers: { Authorization: token },
 		})
@@ -20,8 +19,9 @@ function App() {
 				setContentField(json.content);
 			});
 	}
-	function fetchDataCropData() {
+	function fetchCropData() {
 		fetch("https://api.cropx.info/api/general/refdata?type=Crops&version=v2", {
+			// FYI, this API doesn't require the token for authentication
 			headers: { Authorization: token },
 		})
 			.then((respCrop) => respCrop.json())
@@ -53,6 +53,7 @@ function App() {
 						cropsIcon: elemField.cropsIds.map((cropId) => {
 							return convertCropIdToIcon(cropId);
 						}),
+						moistureBarData: getAmountRelativeToday(elemField),
 					};
 					array.push(currentObj);
 				});
@@ -77,71 +78,28 @@ function App() {
 		}
 	}
 
+	function getAmountRelativeToday(fieldData) {
+		return fieldData.moistureBarData.data[1].amountRelative;
+	}
+
 	useEffect(() => {
-		fetchDataFieldData();
-		fetchDataCropData();
+		fetchFieldData();
+		fetchCropData();
 	}, []);
 
 	useEffect(() => {
 		parseData();
 	}, [contentField, contentCrop]);
 
-	console.log(contentField, "parsedData");
-
 	return (
-		//Access Denied on the crop icon
 		<>
-			<h1>Optimal</h1>
-			{parsedData &&
-				parsedData
-					.filter((elem) => {
-						return elem.status == "Optimal";
-					})
-					.map((elem, idx) => (
-						<div key={idx}>
-							<div>{elem.farmName}</div>
-							<div>{elem.fieldName}</div>
-							<div>{elem.qrCode}</div>
-							<div>{elem.status}</div>
-							<div>{elem.cropsName}</div>
-							<img src={elem.cropsIcon} />
-						</div>
-					))}
-
-			<h1>Full</h1>
-			{parsedData &&
-				parsedData
-					.filter((elem) => {
-						return elem.status == "Full";
-					})
-					.map((elem, idx) => (
-						<div key={idx}>
-							<div>{elem.farmName}</div>
-							<div>{elem.fieldName}</div>
-							<div>{elem.qrCode}</div>
-							<div>{elem.status}</div>
-							<div>{elem.cropsName}</div>
-
-							<img src={elem.cropsIcon} />
-						</div>
-					))}
-
-			<h1>Refill</h1>
-			{parsedData &&
-				parsedData
-					.filter((elem) => {
-						return elem.status == "Refill";
-					})
-					.map((elem, idx) => (
-						<div key={idx}>
-							<div>{elem.farmName}</div>
-							<div>{elem.fieldName}</div>
-							<div>{elem.qrCode}</div>
-							<div>{elem.status}</div>
-							<div>{elem.cropsName}</div>
-							<img src={elem.cropsIcon}> </img>
-						</div>
-					))}
+			{parsedData && (
+				<>
+					<FieldsByCatagory data={parsedData} category={"Full"} />
+					<FieldsByCatagory data={parsedData} category={"Refill"} />
+					<FieldsByCatagory data={parsedData} category={"Optimal"} />
+				</>
+			)}
 		</>
 	);
 }
